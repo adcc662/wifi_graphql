@@ -7,8 +7,6 @@ from geoalchemy2 import Geography, WKTElement
 from shapely.geometry import Point
 from sqlalchemy import Column
 
-
-
 class WifiAccessPointBase(SQLModel):
     """Base model for WiFi access points"""
     model_config = {"arbitrary_types_allowed": True}
@@ -19,6 +17,7 @@ class WifiAccessPointBase(SQLModel):
     longitude: float = Field(ge=-180, le=180)
     neighborhood: str = Field(index=True)
     district: str = Field(index=True)
+
 
 class WifiAccessPoint(WifiAccessPointBase, table=True):
     """Database model for WiFi access points"""
@@ -31,8 +30,6 @@ class WifiAccessPoint(WifiAccessPointBase, table=True):
             nullable=True
         )
     )
-
-
     def set_location(self):
         """Sets the geographic point based on latitude and longitude"""
         self.location = f'SRID=4326;POINT({self.longitude} {self.latitude})'
@@ -44,13 +41,16 @@ class WifiAccessPoint(WifiAccessPointBase, table=True):
             return (point.y, point.x)  # latitude, longitude
         return (self.latitude, self.longitude)
 
+
 class WifiAccessPointCreate(WifiAccessPointBase):
     """Create model for WiFi access points"""
     pass
 
+
 class WifiAccessPointRead(WifiAccessPointBase):
     """Update model for WiFi access points"""
     id: str
+
 
 class WifiAccessPointUpdate(SQLModel):
     """Schema for updating a WiFi access point"""
