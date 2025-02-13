@@ -6,7 +6,7 @@ from src.database.session import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manejo correcto del ciclo de vida de la app"""
+    """Lifecycle of the application"""
     await init_db()
     yield
     print("App shutting down...")

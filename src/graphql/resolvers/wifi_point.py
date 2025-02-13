@@ -20,7 +20,7 @@ async def get_wifi_points(
             if neighborhood:
                 query = query.where(WifiAccessPoint.neighborhood == neighborhood)
 
-            # Primero ejecutar la consulta de count
+            # Execute first query count
             count_query = select(func.count()).select_from(WifiAccessPoint)
             if neighborhood:
                 count_query = count_query.where(WifiAccessPoint.neighborhood == neighborhood)
@@ -28,7 +28,7 @@ async def get_wifi_points(
             total_result = await session.execute(count_query)
             total = total_result.scalar() or 0
 
-            # Luego la consulta principal con paginación
+            # Main query pagination
             query = query.offset((page - 1) * page_size).limit(page_size)
             result = await session.execute(query)
             items = result.scalars().all()
@@ -89,30 +89,30 @@ async def get_wifi_points_by_proximity(
 ) -> PaginatedWifiAccessPointType:
     session = await anext(get_session())
     try:
-        # Crear punto de referencia correctamente SIN ST_GeogFromText
-        point = func.ST_MakePoint(longitude, latitude)  # Sin necesidad de GeogFromText
+        # **Create a reference point properly WITHOUT ST_GeogFromText**
+        point = func.ST_MakePoint(longitude, latitude)
 
         query = select(WifiAccessPoint).where(
             func.ST_DWithin(
                 WifiAccessPoint.location,
-                func.ST_SetSRID(point, 4326),  # Convertir a SRID 4326
+                func.ST_SetSRID(point, 4326),
                 radius
             )
         ).order_by(
             func.ST_Distance(WifiAccessPoint.location, func.ST_SetSRID(point, 4326))
         )
 
-        # Contar total de registros
+        # Count total records
         total_query = select(func.count()).select_from(query.subquery().alias("total_subquery"))
         total_result = await session.execute(total_query)
         total = total_result.scalar() or 0  # Evitar None
 
-        # Paginación
+        # Pagination
         query = query.offset((page - 1) * page_size).limit(page_size)
         result = await session.execute(query)
         items = result.scalars().all()
 
-        # Convertir a tipos GraphQL
+        # Convert to GraphQL types
         wifi_points = [
             WifiAccessPointType(
                 id=item.id,

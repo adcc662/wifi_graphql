@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional, Any
-
 from geoalchemy2.shape import to_shape
 from sqlmodel import SQLModel, Field
 from geoalchemy2 import Geography, WKTElement

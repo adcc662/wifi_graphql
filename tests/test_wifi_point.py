@@ -3,7 +3,7 @@ from src.models.wifi_point import WifiAccessPoint
 
 
 def test_wifi_access_point_creation():
-    """Verifica que se puede crear un objeto WifiAccessPoint correctamente."""
+    """Wifi Access Point creation"""
     wifi = WifiAccessPoint(
         id="TEST001",
         program="Test Program",

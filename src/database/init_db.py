@@ -7,9 +7,9 @@ from src.models.wifi_point import SQLModel
 
 async def init_db():
     async with engine.begin() as conn:
-        # Habilitar PostGIS
+        # Activate PostGIS
         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS postgis'))
-        # Crear tablas
+        # Create Tables
         await conn.run_sync(SQLModel.metadata.create_all)
 
 if __name__ == "__main__":

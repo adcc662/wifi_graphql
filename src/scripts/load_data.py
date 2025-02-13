@@ -21,34 +21,34 @@ async def load_csv_data():
         print(f"❌ Error al leer el CSV: {e}")
         return
 
-    # Reemplazar NaN en columnas de texto con "Desconocido"
+
     df['colonia'].fillna("Desconocido", inplace=True)
     df['alcaldia'].fillna("Desconocido", inplace=True)
 
-    # Verificar duplicados en ID
+    # Verified ID Duplicated
     duplicated_ids = df[df.duplicated(subset=['id'], keep=False)]
     if not duplicated_ids.empty:
         print(f"⚠️ Se encontraron {len(duplicated_ids)} IDs duplicados. Asignando nuevos IDs únicos...")
 
-        # Agregar un UUID para diferenciar los duplicados
+        # Add a UUID to differentiate duplicates
         df['id'] = df.apply(lambda row: f"{row['id']}_{uuid.uuid4().hex[:8]}"
         if row['id'] in duplicated_ids['id'].values else row['id'], axis=1)
 
     print(f"✅ Registros después de eliminar duplicados: {len(df)}")
 
     async with AsyncSessionLocal() as session:
-        # Verificar registros antes de borrar
+        # Verified registers before to delete
         count_before = await session.execute(text('SELECT COUNT(*) FROM wifi_access_points'))
         print(f"📉 Registros en la BD antes de la inserción: {count_before.scalar()}")
 
-        # Limpiar la tabla solo si es necesario
+        # Clean table if it's necessary
         await session.execute(text('DELETE FROM wifi_access_points'))
         await session.commit()
 
         count_after = await session.execute(text('SELECT COUNT(*) FROM wifi_access_points'))
         print(f"✅ Registros en la BD después de la limpieza: {count_after.scalar()}")
 
-        # Insertar datos en lotes de 1000
+        # Insert data in batches of 1000
         default_date = datetime(2024, 1, 1)
         batch_size = 1000
 
@@ -68,7 +68,7 @@ async def load_csv_data():
                     district=row['alcaldia'],
                     location=f'SRID=4326;POINT({row["longitud"]} {row["latitud"]})'
 
-                ).on_conflict_do_nothing(index_elements=['id'])  # Evita conflictos de clave duplicada
+                ).on_conflict_do_nothing(index_elements=['id'])
                 for row in batch
             ]
 

@@ -13,7 +13,7 @@ async def get_session() -> AsyncSession:
     async with AsyncSessionLocal() as session:
         yield session
 
-# Función para inicializar la base de datos
+# Function to initialize database
 async def init_db():
     async with engine.begin() as conn:
         # Crear extensión PostGIS si no existe
