@@ -18,9 +18,10 @@ class Query:
     async def wifi_points(
         self,
         page: int = 1,
-        page_size: int = 10
+        page_size: int = 10,
+        neighborhood: str | None = None
     ) -> PaginatedWifiAccessPointType:
-        return await get_wifi_points(page, page_size)
+        return await get_wifi_points(page, page_size, neighborhood)
 
     @strawberry.field
     async def wifi_point(
