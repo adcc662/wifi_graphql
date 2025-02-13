@@ -49,7 +49,7 @@ Make sure you have installed:
 
 3. **Start services with Docker Compose**
    ```bash
-   docker compose up --build -d
+   docker compose up --build
    ```
 
 4. **Initialize the database and load data**
