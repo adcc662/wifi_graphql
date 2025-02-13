@@ -11,7 +11,7 @@ class GeoLocation:
 class LocationInput:
     latitude: float
     longitude: float
-    radius: float = 1000.0  # metros por defecto
+    radius: float
 
 @strawberry.type
 class WifiAccessPointType:
