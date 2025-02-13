@@ -1,8 +1,8 @@
-# src/scripts/load_data.py
 import asyncio
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import uuid
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from src.database.session import AsyncSessionLocal
@@ -16,32 +16,39 @@ async def load_csv_data():
     # Leer el CSV
     try:
         df = pd.read_csv(csv_path)
-        print(f"📊 Registros encontrados: {len(df)}")
+        print(f"📊 Registros encontrados en el CSV: {len(df)}")
     except Exception as e:
         print(f"❌ Error al leer el CSV: {e}")
         return
 
-    # Eliminar IDs duplicados antes de insertar
-    df.drop_duplicates(subset=['id'], keep='first', inplace=True)
-    print(f"✅ Registros después de eliminar duplicados: {len(df)}")
-
-    # Reemplazar NaN en columnas de tipo VARCHAR
+    # Reemplazar NaN en columnas de texto con "Desconocido"
     df['colonia'].fillna("Desconocido", inplace=True)
     df['alcaldia'].fillna("Desconocido", inplace=True)
 
-    async with AsyncSessionLocal() as session:
-        # Verificar cantidad de registros antes de borrar
-        count_before = await session.execute(text('SELECT COUNT(*) FROM wifi_access_points'))
-        print(f"📉 Registros antes de limpiar: {count_before.scalar()}")
+    # Verificar duplicados en ID
+    duplicated_ids = df[df.duplicated(subset=['id'], keep=False)]
+    if not duplicated_ids.empty:
+        print(f"⚠️ Se encontraron {len(duplicated_ids)} IDs duplicados. Asignando nuevos IDs únicos...")
 
-        # Limpiar tabla antes de insertar nuevos datos
+        # Agregar un UUID para diferenciar los duplicados
+        df['id'] = df.apply(lambda row: f"{row['id']}_{uuid.uuid4().hex[:8]}"
+        if row['id'] in duplicated_ids['id'].values else row['id'], axis=1)
+
+    print(f"✅ Registros después de eliminar duplicados: {len(df)}")
+
+    async with AsyncSessionLocal() as session:
+        # Verificar registros antes de borrar
+        count_before = await session.execute(text('SELECT COUNT(*) FROM wifi_access_points'))
+        print(f"📉 Registros en la BD antes de la inserción: {count_before.scalar()}")
+
+        # Limpiar la tabla solo si es necesario
         await session.execute(text('DELETE FROM wifi_access_points'))
         await session.commit()
 
         count_after = await session.execute(text('SELECT COUNT(*) FROM wifi_access_points'))
-        print(f"✅ Registros después de limpiar: {count_after.scalar()}")
+        print(f"✅ Registros en la BD después de la limpieza: {count_after.scalar()}")
 
-        # Cargar nuevos datos en lotes
+        # Insertar datos en lotes de 1000
         default_date = datetime(2024, 1, 1)
         batch_size = 1000
 
@@ -53,12 +60,15 @@ async def load_csv_data():
                 insert(WifiAccessPoint).values(
                     id=row['id'],
                     program=row['programa'],
-                    installation_date=default_date if pd.isna(row['fecha_instalacion']) else pd.to_datetime(row['fecha_instalacion']),
+                    installation_date=default_date if pd.isna(row['fecha_instalacion']) else pd.to_datetime(
+                        row['fecha_instalacion']),
                     latitude=row['latitud'],
                     longitude=row['longitud'],
                     neighborhood=row['colonia'],
-                    district=row['alcaldia']
-                ).on_conflict_do_nothing(index_elements=['id'])  # Evita errores de clave duplicada
+                    district=row['alcaldia'],
+                    location=f'SRID=4326;POINT({row["longitud"]} {row["latitud"]})'
+
+                ).on_conflict_do_nothing(index_elements=['id'])  # Evita conflictos de clave duplicada
                 for row in batch
             ]
 
@@ -66,7 +76,7 @@ async def load_csv_data():
                 await session.execute(stmt)
 
             await session.commit()
-            print(f"✅ Lote {i // batch_size + 1} cargado exitosamente")
+            print(f"✅ Lote {i // batch_size + 1} insertado exitosamente")
 
     print("🎉 Carga de datos finalizada con éxito")
 
