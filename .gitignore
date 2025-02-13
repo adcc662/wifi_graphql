@@ -19,7 +19,6 @@ docs_build
 venv
 docs.zip
 archive.zip
-**.csv
 *~
 .*.sw
 testing-project
@@ -33,7 +32,6 @@ commands.txt
 .env.windows
 .env.tmp
 .env.unix
-*.csv
 *.pdf
 alembic/versions/*
 data
